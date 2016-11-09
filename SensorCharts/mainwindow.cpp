@@ -8,6 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     connect(ui->updateButton, SIGNAL(clicked()), this, SLOT(onUpdateButtonPressed()));
+    connect(ui->comboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(onSelectedSensorChanged()));
     connect(ui->calendarWidget, SIGNAL(selectionChanged()), this, SLOT(onDateChanged()));
     m_networkAccessManager = new QNetworkAccessManager();
     connect(m_networkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(onDataReceived(QNetworkReply*)));
@@ -17,6 +18,9 @@ MainWindow::MainWindow(QWidget *parent) :
     m_chartView->setRenderHint(QPainter::Antialiasing);
     ui->verticalLayout->addWidget(m_chartView);
     getSensors();
+
+    ui->lcdCurrentTemp->setPalette(Qt::red);
+    ui->lcdCurrentVCC->setPalette(Qt::red);
 }
 
 MainWindow::~MainWindow()
@@ -32,7 +36,7 @@ void MainWindow::onDateChanged(){
 }
 
 void MainWindow::onDataReceived(QNetworkReply *reply){
-    if(reply->url().query().length()>0){
+    if(reply->url().query().length()>0 && reply->url().query().contains("from")){
          QString data = (QString) reply->readAll();
 
          QJsonDocument d = QJsonDocument::fromJson(data.toUtf8());
@@ -79,7 +83,15 @@ void MainWindow::onDataReceived(QNetworkReply *reply){
          series->attachAxis(axisY);
 
         m_chartView->setChart(chart);
-    }else {
+    } else if (reply->url().query().length()>0){
+        QString data = (QString) reply->readAll();
+        QJsonDocument d = QJsonDocument::fromJson(data.toUtf8());
+        QJsonObject o = d.object();
+        double temp = o.value("value").toString().toDouble();
+        double vcc = o.value("vcc").toString().toDouble();
+        ui->lcdCurrentTemp->display(temp);
+        ui->lcdCurrentVCC->display(vcc);
+    } else {
         QString data = (QString) reply->readAll();
         QJsonDocument d = QJsonDocument::fromJson(data.toUtf8());
         QJsonArray a = d.array();
@@ -114,4 +126,17 @@ void MainWindow::getSensorData(){
 void MainWindow::onUpdateButtonPressed(){
     m_currentDate = ui->calendarWidget->selectedDate();
     getSensorData();
+}
+
+
+void MainWindow::onSelectedSensorChanged(){
+    QUrl url;
+    url.setUrl("http://192.168.178.70/~alarm/sensors.php");
+    url.setQuery("sensor_id="+ui->comboBox->currentText());
+    qDebug() << url << endl;
+
+    QNetworkRequest request;
+    request.setUrl(url);
+
+    m_networkAccessManager->get(request);
 }

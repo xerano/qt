@@ -46,6 +46,7 @@ private slots:
     void onDateChanged();
     void onDataReceived(QNetworkReply*);
     void onUpdateButtonPressed();
+    void onSelectedSensorChanged();
 };
 
 #endif // MAINWINDOW_H
