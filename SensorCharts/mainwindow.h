@@ -42,6 +42,8 @@ private:
     void getSensorData();
     void getSensors();
 
+    void updateSensor();
+    
 private slots:
     void onDateChanged();
     void onDataReceived(QNetworkReply*);

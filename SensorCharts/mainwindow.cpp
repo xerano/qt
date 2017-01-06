@@ -70,8 +70,8 @@ void MainWindow::onDataReceived(QNetworkReply *reply){
          QValueAxis *axisY = new QValueAxis;
          axisY->setLabelFormat("%.2f");
          axisY->setTitleText("Temp");
-         axisY->setRange(-40, 40);
-         axisY->setTickCount(9);
+         axisY->setRange(-30, 40);
+         axisY->setTickCount(8);
 
          axisY->setGridLineVisible();
 
@@ -91,6 +91,7 @@ void MainWindow::onDataReceived(QNetworkReply *reply){
         double vcc = o.value("vcc").toString().toDouble();
         ui->lcdCurrentTemp->display(temp);
         ui->lcdCurrentVCC->display(vcc);
+        getSensorData();
     } else {
         QString data = (QString) reply->readAll();
         QJsonDocument d = QJsonDocument::fromJson(data.toUtf8());
@@ -99,6 +100,7 @@ void MainWindow::onDataReceived(QNetworkReply *reply){
             QJsonValue val = a.at(i);
             ui->comboBox->addItem(val.toObject().value("sensor_id").toString());
         }
+        getSensorData();
     }
 }
 
@@ -125,11 +127,12 @@ void MainWindow::getSensorData(){
 
 void MainWindow::onUpdateButtonPressed(){
     m_currentDate = ui->calendarWidget->selectedDate();
-    getSensorData();
+    updateSensor();
 }
 
 
-void MainWindow::onSelectedSensorChanged(){
+void MainWindow::updateSensor()
+{
     QUrl url;
     url.setUrl("http://192.168.178.70/~alarm/sensors.php");
     url.setQuery("sensor_id="+ui->comboBox->currentText());
@@ -139,4 +142,8 @@ void MainWindow::onSelectedSensorChanged(){
     request.setUrl(url);
 
     m_networkAccessManager->get(request);
+}
+
+void MainWindow::onSelectedSensorChanged(){
+    updateSensor();
 }
